@@ -152,8 +152,27 @@ app.use("/api/system", systemRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/expert", expertRoutes);
-
 app.use("/api/admin", adminRoutes);
 app.use("/api/contact", contactRoutes);
+
+// Serve static assets in production
+if (process.env.NODE_ENV === "production" || process.env.AZURE_WEBAPP) {
+    const distPath = path.join(process.cwd(), "dist");
+    app.use(express.static(distPath));
+
+    app.get("*", (req, res) => {
+        // Only serve index.html if it's not an API or uploads request
+        if (!req.path.startsWith("/api/") && !req.path.startsWith("/uploads/")) {
+            res.sendFile(path.join(distPath, "index.html"), (err) => {
+                if (err) {
+                    // Fallback to a simple message if index.html is missing
+                    res.status(404).send("Frontend build not found. Please ensure 'npm run build' was executed.");
+                }
+            });
+        } else {
+            res.status(404).json({ error: "API endpoint not found" });
+        }
+    });
+}
 
 
